@@ -51,27 +51,49 @@ const Login = () => {
         [name]: ''
       }));
     }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await authService.login(formData);
-      login(response.user, response.token);
-      toast.success('Login successful!');
-      navigate(from, { replace: true });
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
-    } finally {
-      setLoading(false);
+    // Clear backend error when user types
+    if (errors.backend) {
+      setErrors(prev => ({
+        ...prev,
+        backend: null
+      }));
     }
   };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!validateForm()) {
+    return;
+  }
+
+  setLoading(true);
+  setErrors({}); // Remove debugger here
+  
+  try {
+    const response = await authService.login(formData);
+    // Remove debugger here
+    login(response.user, response.token);
+    toast.success('✅ Login successful!');
+    navigate(from, { replace: true });
+  } catch (error) {
+    // Remove debugger here
+    const errorMessage = error.response?.data?.message || 'Invalid email or password. Please try again.';
+    
+    setErrors({ backend: errorMessage });
+    toast.error(errorMessage);
+    
+    // Clear password field (better UX & security)
+    setFormData(prev => ({
+      ...prev,
+      password: ''
+    }));
+    
+    console.error('Login error:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex relative overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
@@ -153,6 +175,33 @@ const Login = () => {
 
             {/* Login Form */}
             <form className="space-y-5" onSubmit={handleSubmit}>
+              {/* Backend Error Display */}
+              {errors.backend && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-4 animate-shake">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <p className="text-sm font-medium text-red-800">
+                        {errors.backend}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setErrors(prev => ({ ...prev, backend: null }))}
+                      className="flex-shrink-0 ml-3 text-red-400 hover:text-red-600 transition"
+                    >
+                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -170,14 +219,16 @@ const Login = () => {
                     value={formData.email}
                     onChange={handleChange}
                     className={`appearance-none block w-full pl-10 pr-3 py-3 border ${
-                      errors.email ? 'border-red-500' : 'border-gray-300'
+                      errors.email ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
                     } rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm bg-white`}
                     placeholder="you@example.com"
                   />
                 </div>
                 {errors.email && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center">
-                    <span className="mr-1">⚠️</span>
+                  <p className="mt-2 text-sm text-red-600 flex items-center animate-slide-down">
+                    <svg className="w-4 h-4 mr-1.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
                     {errors.email}
                   </p>
                 )}
@@ -200,7 +251,7 @@ const Login = () => {
                     value={formData.password}
                     onChange={handleChange}
                     className={`appearance-none block w-full pl-10 pr-12 py-3 border ${
-                      errors.password ? 'border-red-500' : 'border-gray-300'
+                      errors.password ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
                     } rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm bg-white`}
                     placeholder="••••••••"
                   />
@@ -217,8 +268,10 @@ const Login = () => {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center">
-                    <span className="mr-1">⚠️</span>
+                  <p className="mt-2 text-sm text-red-600 flex items-center animate-slide-down">
+                    <svg className="w-4 h-4 mr-1.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
                     {errors.password}
                   </p>
                 )}

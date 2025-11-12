@@ -6,7 +6,7 @@ import { taskService } from '../../services/taskService';
 import toast from 'react-hot-toast';
 import { FiInfo } from 'react-icons/fi';
 
-const KanbanBoard = ({ projectId, members, isOwner = true }) => {
+const KanbanBoard = ({ projectId, members, isOwner }) => {
   const [tasks, setTasks] = useState([]);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -37,37 +37,24 @@ const KanbanBoard = ({ projectId, members, isOwner = true }) => {
 
   const handleDragEnd = (result) => {
     const { source, destination, draggableId } = result;
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
-    // Dropped outside the list
-    if (!destination) {
-      return;
-    }
-
-    // No change in position
-    if (source.droppableId === destination.droppableId && source.index === destination.index) {
-      return;
-    }
-
-    // Move within or between columns
     const newStatus = destination.droppableId;
 
-    // Update UI immediately
-    setTasks(prevTasks => {
-      const updatedTasks = prevTasks.map(task =>
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
         task._id === draggableId ? { ...task, status: newStatus } : task
-      );
-      return updatedTasks;
-    });
+      )
+    );
 
-    // Update backend
     taskService.updateTaskStatus(projectId, draggableId, newStatus)
       .then(() => {
-        toast.success('Task moved successfully', { duration: 2000 });
+        toast.success('Task status updated');
       })
       .catch((error) => {
-        console.error('Failed to update:', error);
-        toast.error('Failed to move task');
-        fetchTasks(); // Revert on error
+        toast.error('Failed to update task status');
+        fetchTasks();
       });
   };
 
@@ -82,32 +69,37 @@ const KanbanBoard = ({ projectId, members, isOwner = true }) => {
     setIsTaskModalOpen(true);
   };
 
-  const handleDeleteTask = async (task) => {
-    if (window.confirm(`Delete "${task.title}"?`)) {
-      try {
-        await taskService.deleteTask(projectId, task._id);
-        toast.success('Task deleted');
-        fetchTasks();
-      } catch (error) {
-        toast.error('Failed to delete task');
-      }
-    }
-  };
+const handleDeleteTask = async (task) => {
+  // REMOVE THIS LINE:
+  // if (window.confirm(`Delete "${task.title}"?`)) {
+  
+  // Just delete directly - TaskCard already shows the modal
+  try {
+    await taskService.deleteTask(projectId, task._id);
+    toast.success('Task deleted successfully');
+    fetchTasks();
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Failed to delete task');
+  }
+  
+  // REMOVE THIS LINE:
+  // }
+};
 
   const handleSubmitTask = async (taskData) => {
     try {
       if (editingTask) {
         await taskService.updateTask(projectId, editingTask._id, taskData);
-        toast.success('Task updated');
+        toast.success('Task updated successfully');
       } else {
         await taskService.createTask(projectId, taskData);
-        toast.success('Task created');
+        toast.success('Task created successfully');
       }
       fetchTasks();
       setIsTaskModalOpen(false);
       setEditingTask(null);
     } catch (error) {
-      toast.error('Failed to save task');
+      toast.error(error.response?.data?.message || 'Failed to save task');
       throw error;
     }
   };
@@ -122,22 +114,23 @@ const KanbanBoard = ({ projectId, members, isOwner = true }) => {
 
   return (
     <div className="p-6 bg-gray-50">
-      {!isOwner && (
-        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <FiInfo className="text-blue-600 mt-1" size={20} />
-            <div>
-              <p className="text-sm font-medium text-blue-900">Member View</p>
-              <p className="text-xs text-blue-700 mt-1">
-                You can only see tasks assigned to you.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+    {!isOwner && (
+  <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+    <div className="flex items-start gap-3">
+      <FiInfo className="text-blue-600 mt-1" size={20} />
+      <div>
+        <p className="text-sm font-medium text-blue-900">Member View</p>
+        <p className="text-xs text-blue-700 mt-1">
+          You can create, edit, and delete tasks. Tasks you create are automatically assigned to you. Only the owner can assign tasks to other members.
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+
 
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {columns.map((column) => {
             const columnTasks = tasks.filter(task => task.status === column.id);
             return (
@@ -147,7 +140,7 @@ const KanbanBoard = ({ projectId, members, isOwner = true }) => {
                 tasks={columnTasks}
                 onAddTask={handleAddTask}
                 onEditTask={handleEditTask}
-                onDeleteTask={handleDeleteTask}
+                onDeleteTask={handleDeleteTask} 
                 isOwner={isOwner}
               />
             );
@@ -165,6 +158,7 @@ const KanbanBoard = ({ projectId, members, isOwner = true }) => {
         initialData={editingTask}
         members={members}
         initialStatus={selectedStatus}
+        isOwner={isOwner}
       />
     </div>
   );

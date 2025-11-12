@@ -28,13 +28,10 @@ const ProjectDetail = () => {
       setLoading(true);
       const data = await projectService.getProjectById(id);
       
-      // Add isOwner flag
-      const projectWithOwnerFlag = {
-        ...data,
-        isOwner: data.owner._id === user?.id || data.owner._id === user?._id
-      };
+      console.log('Project data:', data);
+      console.log('Current user:', user);
       
-      setProject(projectWithOwnerFlag);
+      setProject(data);
     } catch (error) {
       toast.error('Failed to fetch project details');
       console.error(error);
@@ -57,13 +54,11 @@ const ProjectDetail = () => {
       return;
     }
 
-    // Check if already a member
     if (project.members.some(m => m.email === memberEmail)) {
       toast.error('This user is already a member');
       return;
     }
 
-    // Check if trying to add owner
     if (project.owner.email === memberEmail) {
       toast.error('Owner is already part of the project');
       return;
@@ -115,6 +110,13 @@ const ProjectDetail = () => {
     return null;
   }
 
+  // Check if current user is the owner
+  const isOwner = project.owner._id === user?._id || project.owner._id === user?.id;
+  
+  console.log('Is Owner:', isOwner);
+  console.log('Project owner ID:', project.owner._id);
+  console.log('Current user ID:', user?._id || user?.id);
+
   // Combine owner and members for display
   const allMembers = [project.owner, ...(project.members || [])];
   const totalMemberCount = allMembers.length;
@@ -145,7 +147,7 @@ const ProjectDetail = () => {
                   <p className="text-gray-600 mb-4">{project.description}</p>
                 )}
               </div>
-              {project.isOwner && (
+              {isOwner && (
                 <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
                   <FiShield size={14} />
                   Owner
@@ -207,14 +209,15 @@ const ProjectDetail = () => {
             {activeTab === 'board' && (
               <KanbanBoard 
                 projectId={id} 
-                members={allMembers}  // Pass owner + members
+                members={project.members || []} 
+                isOwner={isOwner} 
               />
             )}
 
             {activeTab === 'members' && (
               <div className="p-6">
                 {/* Add Member Section */}
-                {project.isOwner && (
+                {isOwner && (
                   <div className="mb-6">
                     {!showAddMember ? (
                       <button
@@ -314,7 +317,7 @@ const ProjectDetail = () => {
                             </div>
                           </div>
 
-                          {project.isOwner && (
+                          {isOwner && (
                             <button
                               onClick={() => handleRemoveMember(member)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"

@@ -2,7 +2,7 @@ import { Droppable } from '@hello-pangea/dnd';
 import TaskCard from './TaskCard';
 import { FiPlus } from 'react-icons/fi';
 
-const Column = ({ column, tasks, onAddTask, onEditTask, onDeleteTask, isOwner = true }) => {
+const Column = ({ column, tasks, onAddTask, onEditTask, onDeleteTask, isOwner }) => {
   const getColumnColor = (status) => {
     switch (status) {
       case 'todo':
@@ -31,7 +31,6 @@ const Column = ({ column, tasks, onAddTask, onEditTask, onDeleteTask, isOwner = 
 
   return (
     <div className={`rounded-lg border-2 ${getColumnColor(column.id)} p-4 min-h-[600px] flex flex-col`}>
-      {/* Column Header */}
       <div className="flex justify-between items-center mb-4">
         <div>
           <h3 className={`font-semibold text-lg ${getHeaderColor(column.id)}`}>
@@ -39,7 +38,8 @@ const Column = ({ column, tasks, onAddTask, onEditTask, onDeleteTask, isOwner = 
           </h3>
           <span className="text-sm text-gray-600">{tasks.length} tasks</span>
         </div>
-        {isOwner && (
+        {/* All members can add tasks */}
+        {onAddTask && (
           <button
             onClick={() => onAddTask(column.id)}
             className="p-2 hover:bg-white rounded-full transition"
@@ -50,7 +50,6 @@ const Column = ({ column, tasks, onAddTask, onEditTask, onDeleteTask, isOwner = 
         )}
       </div>
 
-      {/* Droppable Area - Bigger drop zone */}
       <Droppable droppableId={column.id}>
         {(provided, snapshot) => (
           <div

@@ -25,10 +25,21 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only redirect to login if:
+    // 1. Status is 401 AND
+    // 2. User is already logged in (has a token) AND
+    // 3. It's NOT a login/signup request
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const isAuthRequest = error.config.url.includes('/auth/login') || 
+                           error.config.url.includes('/auth/register');
+      
+      // Only redirect if user was already logged in and token expired
+      // NOT for failed login attempts
+      if (!isAuthRequest && localStorage.getItem('token')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
