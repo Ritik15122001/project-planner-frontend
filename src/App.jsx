@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom'; // Remove BrowserRouter
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext'; // Add this
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 // Auth Pages
@@ -15,8 +16,8 @@ import ProjectDetail from './components/projects/ProjectDetail';
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
+    <AuthProvider>
+      <SocketProvider> {/* Add SocketProvider */}
         <div className="App">
           <Routes>
             {/* Public Routes */}
@@ -54,7 +55,6 @@ function App() {
             reverseOrder={false}
             gutter={8}
             toastOptions={{
-              // Default options
               duration: 3000,
               style: {
                 background: '#363636',
@@ -62,7 +62,6 @@ function App() {
                 padding: '16px',
                 borderRadius: '8px',
               },
-              // Success toast style
               success: {
                 duration: 3000,
                 iconTheme: {
@@ -70,7 +69,6 @@ function App() {
                   secondary: '#fff',
                 },
               },
-              // Error toast style
               error: {
                 duration: 4000,
                 iconTheme: {
@@ -81,8 +79,8 @@ function App() {
             }}
           />
         </div>
-      </AuthProvider>
-    </BrowserRouter>
+      </SocketProvider>
+    </AuthProvider>
   );
 }
 
